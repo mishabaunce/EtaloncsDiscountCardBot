@@ -1,90 +1,86 @@
-const tg = window.Telegram.WebApp;
+import { Telegraf } from "telegraf";
+import fetch from "node-fetch";
+import crypto from "crypto";
 
-tg.expand();
-
-// Telegram user
-const user = tg.initDataUnsafe.user;
-
-// SUPABASE
+// 🔑 мои ДАННЫЕ
+const BOT_TOKEN = "8676933243:AAGt94ax1l_hnsC5eO5KmTHEd7jxPkSJ2E8";
 const SUPABASE_URL = "https://fgzsqkeyehopplhazyet.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnenNxa2V5ZWhvcHBsaGF6eWV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzA2MjksImV4cCI6MjA5NDg0NjYyOX0.LKXyNzw50KQNcYxgfVCKbfPrDoZu3KAS1reGpDEOPVU";
 
-const SUPABASE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnenNxa2V5ZWhvcHBsaGF6eWV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzA2MjksImV4cCI6MjA5NDg0NjYyOX0.LKXyNzw50KQNcYxgfVCKbfPrDoZu3KAS1reGpDEOPVU";
+const bot = new Telegraf(BOT_TOKEN);
 
-// загрузка клиента
-async function loadClient() {
+// helper для Supabase REST
+async function sb(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+  });
 
-  try {
-
-    // ищем клиента в базе
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/clients?telegram_id=eq.${user.id}`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
-
-    const data = await response.json();
-
-    let client;
-
-    // если клиента нет — создаём
-    if (data.length === 0) {
-
-      const newClient = {
-        telegram_id: user.id,
-        name: user.first_name,
-        purchases: 0,
-        discount: 0
-      };
-
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/clients`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`
-          },
-          body: JSON.stringify(newClient)
-        }
-      );
-
-      client = newClient;
-
-    } else {
-
-      client = data[0];
-
-    }
-
-    // имя клиента
-    document.getElementById("name").innerText =
-      client.name;
-
-    // скидка
-    document.querySelector(".discount").innerText =
-      `Скидка ${client.discount}%`;
-
-    // QR код
-    QRCode.toCanvas(
-      document.getElementById("qrcode"),
-      `client_${user.id}`,
-      function (error) {
-        if (error) console.error(error);
-      }
-    );
-
-  } catch (error) {
-
-    console.error("Ошибка:", error);
-
-  }
-
+  return res.json();
 }
 
-loadClient();
+// 🚀 START
+bot.start(async (ctx) => {
+  const user = ctx.from;
+  const payload = ctx.startPayload;
+
+  let client = null;
+
+  // 1. если пришли по ссылке / QR
+  if (payload) {
+    const data = await sb(`clients?card_code=eq.${payload}`);
+    client = data?.[0];
+  }
+
+  // 2. иначе ищем по telegram_id
+  if (!client) {
+    const data = await sb(`clients?telegram_id=eq.${user.id}`);
+    client = data?.[0];
+  }
+
+  // 3. если клиента нет — создаём
+  if (!client) {
+    const newClient = {
+      telegram_id: user.id,
+      name: user.first_name || "Клиент",
+      discount: 10,
+      tier: "GOLD",
+      purchases: 0,
+      card_code: crypto.randomUUID().slice(0, 8),
+    };
+
+    const created = await sb("clients", {
+      method: "POST",
+      body: JSON.stringify(newClient),
+    });
+
+    client = created?.[0] || newClient;
+  }
+
+  // 📲 WebApp кнопка
+  ctx.reply("Ваша скидочная карта готова 👇", {
+    reply_markup: {
+      keyboard: [
+        [
+          {
+            text: "📇 Открыть карту",
+            web_app: {
+              url: "https://YOUR-WEBAPP-URL.com",
+            },
+          },
+        ],
+      ],
+      resize_keyboard: true,
+    },
+  });
+});
+
+// ▶️ запуск
+bot.launch();
+
+console.log("Bot started...");

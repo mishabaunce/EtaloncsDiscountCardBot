@@ -1,30 +1,54 @@
-body{
-  margin:0;
-  background:#111;
-  color:white;
-  font-family:Arial;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f0f0f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
 }
 
-.card{
-  margin:20px;
-  padding:30px;
-  border-radius:25px;
-  background:linear-gradient(135deg,#1f1f1f,#333);
-  text-align:center;
+/* КАРТОЧКА */
+.card {
+  width: 320px;
+  padding: 25px;
+  border-radius: 22px;
+
+  background: linear-gradient(135deg, #1b1b1b, #2a2a2a);
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+
+  text-align: center;
 }
 
-.status{
-  margin-top:20px;
-  font-size:22px;
-  color:gold;
+/* TIER */
+.tier {
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+  margin-bottom: 10px;
 }
 
-.discount{
-  margin-top:10px;
-  font-size:40px;
-  font-weight:bold;
+/* ИМЯ */
+.name {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 15px;
 }
 
-canvas{
-  margin-top:30px;
+/* СКИДКА */
+.discount {
+  font-size: 48px;
+  font-weight: bold;
+  color: gold;
+  margin-bottom: 20px;
+}
+
+/* QR блок */
+.qr {
+  background: white;
+  padding: 12px;
+  border-radius: 12px;
+  display: inline-block;
 }
