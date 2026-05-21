@@ -70,7 +70,7 @@ bot.start(async (ctx) => {
           {
             text: "📇 Открыть карту",
             web_app: {
-              url: "https://YOUR-WEBAPP-URL.com",
+              url: "https://etaloncs-discount-card-bot.vercel.app/",
             },
           },
         ],
